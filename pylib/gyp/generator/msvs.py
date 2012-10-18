@@ -1596,13 +1596,15 @@ def _CollapseSingles(parent, node):
   return node
 
 
-def _GatherSolutionFolders(sln_projects, project_objects, flat):
+def _GatherSolutionFolders(sln_projects, project_objects, flat, options):
   root = {}
   # Convert into a tree of dicts on path.
   for p in sln_projects:
     gyp_file, target = gyp.common.ParseQualifiedTarget(p)[0:2]
     gyp_dir = os.path.dirname(gyp_file)
-    path_dict = _GetPathDict(root, gyp_dir)
+    fixed_gyp_dir = gyp.common.RelativePath(gyp_dir, options.depth)
+    # print "gyp_dir", gyp_dir, fixed_gyp_dir
+    path_dict = _GetPathDict(root, fixed_gyp_dir)
     path_dict[target + '.vcproj'] = project_objects[p]
   # Walk down from the top until we hit a folder that has more than one entry.
   # In practice, this strips the top-level "src/" dir from the hierarchy in
@@ -1859,7 +1861,7 @@ def GenerateOutput(target_list, target_dicts, data, params):
     sln_projects += gyp.common.DeepDependencyTargets(target_dicts, sln_projects)
     # Create folder hierarchy.
     root_entries = _GatherSolutionFolders(
-        sln_projects, project_objects, flat=msvs_version.FlatSolution())
+        sln_projects, project_objects, msvs_version.FlatSolution(), options)
     # Create solution.
     sln = MSVSNew.MSVSSolution(sln_path,
                                entries=root_entries,
